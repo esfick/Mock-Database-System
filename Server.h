@@ -9,6 +9,8 @@
 using namespace std;
 
 class Server;
+struct Database;
+struct Table;
 
 enum Type { INTEGER, DOUBLE, CHAR, BOOLEAN, INVALID };
 
@@ -64,6 +66,8 @@ struct Attribute {
     bool is_unique;
     Attr_Type *a_type;
     bool is_p_key;
+    bool nullable;
+    Table *parent_table;
     //int placeholder;
 
     Attribute(string a_name, string typ){
@@ -71,6 +75,7 @@ struct Attribute {
         is_unique = false;
         a_type = new Attr_Type(typ);
         is_p_key = false;
+        nullable = true;
     }
 
     void set_unique(bool u){
@@ -81,6 +86,19 @@ struct Attribute {
         is_p_key = k;
     }
 
+    void set_nullable(bool n){
+        nullable = n;
+    }
+
+    void set_parent_table(Table *t){
+        parent_table = t;
+    }
+
+    Table * get_parent_table(){
+        return parent_table;
+    }
+
+
 
 };
 
@@ -90,6 +108,7 @@ struct Table {
     map<string, Attribute*> attr_map;
     int num_attributes;
     Attribute *primary_key;
+    Database *parent_db;
 
     Table(string t_name){
         table_name = t_name;
@@ -99,33 +118,36 @@ struct Table {
 
     void describe(){
         cout << "Table " << table_name << ", " << num_attributes << " columns" << endl;
-        cout << "Field \t Type \t Unique \t" << endl;
+        cout << "Field\t\tType\t\t Unique\t\t Nullable " << endl;
         for(Attribute *a : attribs){
             cout << a->attr_name;
             if(a->is_p_key){
                 cout << "(key)";
             }
             cout << "\t "<< a->a_type->type_to_string();
-            cout << "\t" << a->is_unique << endl;
+            cout << "\t" << a->is_unique;
+            cout << "\t" << a->nullable <<endl;
         }
     }
 
-    void add_attribute(string attr_name, string attr_type){
+    bool add_attribute(string attr_name, string attr_type){
         if(attr_map.count(attr_name) > 0){
             cout << "Error: column already exists in table" << endl;
-            return;
+            return false;
         }
         Attr_Type *at = new Attr_Type(attr_type);
         if(at->type == INVALID){
             cout << "Error: cannot create column: invalid type" << endl;
             delete at;
-            return;
+            return false;
         }
         delete at;
         Attribute *attr = new Attribute(attr_name, attr_type);
+        attr->set_parent_table(this);
         attr_map.insert(pair<string, Attribute*>(attr_name, attr));
         attribs.push_back(attr);
         num_attributes++;
+        return true;
     }
 
     Attribute* get_attribute(string attr_name){
@@ -181,6 +203,14 @@ struct Table {
         num_attributes--;
     }
 
+    void set_parent_db(Database *d){
+        parent_db = d;
+    }
+
+    Database * get_parent_db(){
+        return parent_db;
+    }
+
 
 };
 
@@ -206,6 +236,7 @@ struct Database {
             return;
         }
         Table *t = new Table(table_name);
+        t->set_parent_db(this);
         tables.insert(pair<string, Table*>(table_name, t));
         num_tables++;
     }

@@ -9,7 +9,8 @@ show databases;
 use [db name];
 drop database [name];
 show tables;
-create table[name]; 
+create table[name];
+create table[name](init list);
 describe [table name];
 alter table [name] drop column [name];
 alter table [name] add column [name][type];
@@ -22,10 +23,14 @@ alter table [name] unset key [name];
 
 Types supported so far: int, double, boolean, char (max 255)
 
+Init list in table creation is inside parens delineated by commas. Each substring in list is in format
+[fieldname][field type]
+with additional options pkey (make primary key), !null (make not nullable), and unique (require unique values)
+
 To do:
 - Add more types
 - Add more commands inc. SQL
-- Add mysql style table initialization
+- Expand mysql style table initialization
 - Be able to create table values
 - Change back to cin
 - Saving and loading

@@ -2,9 +2,13 @@
 #include <vector>
 #include <sstream>
 #include <fstream>
+#include <algorithm>
+#include <boost/algorithm/string.hpp>
+#include <boost/tokenizer.hpp>
 #include "functions.h"
 #include "Server.h"
 using namespace std;
+using namespace boost;
 
 extern string current_loc_string;
 extern Server *server;
@@ -39,6 +43,9 @@ void parse_db_command(string command){
     if(cmd.at(0) == "create" && cmd.at(1) == "table" && cmd.size()==3){
         database->create_table(cmd.at(2));
     }
+    if(cmd.at(0) == "create" && cmd.at(1) == "table" && cmd.size() > 3){
+        create_table_from_init_list(command);
+    }
     else if(cmd.at(0) == "show" && cmd.at(1) == "tables" && cmd.size()==2){
         database->list_tables();
     }
@@ -62,6 +69,17 @@ void parse_db_command(string command){
         if(table != NULL){
             alter_table(cmd);
         }
+    }
+    else if(cmd.at(0) == "select" && cmd.at(2) == "from" && cmd.size() >= 4){
+        //sql
+        parse_sql_select(cmd);
+    }
+    else if(cmd.at(0) == "select" && cmd.at(1) == "distinct" && cmd.at(3) == "from" && cmd.size() == 5){
+        //sql
+        parse_sql_select_distinct(cmd.at(2), cmd.at(4));
+    }
+    else if(cmd.at(0) == "insert" && cmd.at(1) == "into" && cmd.size() >= 4){
+        parse_sql_insert(cmd);
     }
 }
 
@@ -90,6 +108,12 @@ void alter_table(vector<string> cmd){
     else if(cmd.at(3) == "unset" && cmd.at(4) == "key" && cmd.size()==6){
         toggle_primary_key(cmd.at(5), false);
     }
+    else if(cmd.at(3) == "set" && cmd.at(4) == "nullable" && cmd.size()==6){
+        toggle_nullable(cmd.at(5), true);
+    }
+    else if(cmd.at(3) == "unset" && cmd.at(4) == "nullable" && cmd.size()==6){
+        toggle_nullable(cmd.at(5), false);
+    }
 }
 
 void toggle_unique(string attr_name, bool unique){
@@ -108,4 +132,82 @@ void toggle_primary_key(string attr_name, bool iskey){
         table->primary_key = a;
         a->set_pkey(iskey);
     }
+}
+
+void toggle_nullable(string attr_name, bool n){
+    Attribute *a = table->get_attribute(attr_name);
+    if(table != NULL && a != NULL){
+        a->set_nullable(n);
+    }
+}
+
+void create_table_from_init_list(string command){
+    string table_name;
+    string list;
+    if(!validate_table_init(command, table_name, list)){
+        cout << "Error: invalid table initialization" << endl;
+        return;
+    }
+    database->create_table(table_name);
+    table = database->get_table(table_name);
+    if(table == NULL){
+        cout << "Error fetching table" << endl;
+        return;
+    }
+    char_separator<char> sep(",");
+    tokenizer<char_separator<char> > tok(list, sep);
+    int ct = 0;
+    for(tokenizer<char_separator<char> >::iterator it = tok.begin(); it != tok.end(); ++it){
+        string field = *it;
+        algorithm::trim(field);
+        cout << ct << " ";
+        if(!add_table_field(field)){
+            cout << "Error: invalid table initialization" << endl;
+            database->delete_table(table_name);
+            return;
+        }
+        ct++;
+    }
+}
+
+bool validate_table_init(string init, string &tname, string& list){
+    if(init.at(init.length() - 1) != ')'){
+        return false;
+    }
+    size_t lpar = init.find("(");
+    if(lpar == string::npos || lpar == init.length()-2){
+        return false;
+    }
+    tname = init.substr(13, lpar-13);
+    list = init.substr(lpar+1, init.length()-lpar-2);
+    return true;
+}
+
+bool add_table_field(string field_init){
+    vector<string> fieldvect = command_to_vector(field_init);
+    if(fieldvect.size() < 2 || fieldvect.size() > 5){
+        //error
+        return false;
+    }
+    if(!(table->add_attribute(fieldvect.at(0), fieldvect.at(1)))){
+        return false;
+    }
+    if(fieldvect.size() > 2){
+        for(int i = 2; i < fieldvect.size(); i++){
+            if(fieldvect.at(i) == "!null"){
+                toggle_nullable(fieldvect.at(0), false);
+            }
+            else if(fieldvect.at(i) == "pkey"){
+                toggle_primary_key(fieldvect.at(0), true);
+            }
+            else if(fieldvect.at(i) == "unique"){
+                toggle_nullable(fieldvect.at(0), true);
+            }
+            else {
+                //error
+                return false;
+            }
+        }
+    }
+    return true;
 }

@@ -24,5 +24,16 @@ void parse_db_command(string command);
 void alter_table(vector<string> cmd);
 void toggle_unique(string attr_name, bool unique);
 void toggle_primary_key(string attr_name, bool iskey);
+void toggle_nullable(string attr_name, bool n);
+void create_table_from_init_list(string command);
+bool validate_table_init(string init, string &tname, string& list);
+bool add_table_field(string field_init);
+
+//run_sql.cpp
+
+void parse_sql_select(vector<string> cmd);
+void parse_sql_select_distinct(string cname, string tname);
+void parse_sql_insert(vector<string> cmd);
+
 
 #endif
