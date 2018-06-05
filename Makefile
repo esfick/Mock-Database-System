@@ -1,4 +1,5 @@
-FLAGS = -Wall -std=c++14 -g -O0 -pedantic-errors
+FLAGS = -std=c++14
+#FLAGS = -Wall -std=c++14 -g -O0 -pedantic-errors
 CPPFLAGS = -I /Users/emmafick/boost_1_67_0
 all: MyDb
 

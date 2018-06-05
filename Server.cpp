@@ -1,5 +1,6 @@
 #include "Server.h"
 
+
 Server::Server(string name){
     server_name = name;
     current_db = NULL;
@@ -8,7 +9,7 @@ Server::Server(string name){
 
 void Server::create_db(string db_name){
     if(databases.count(db_name) > 0){
-        cout << "Error: database already exists on server" << endl;
+        error("database already exists on server");
         return;
     }
     Database *db = new Database(db_name);
@@ -19,7 +20,7 @@ void Server::create_db(string db_name){
 
 bool Server::use_db(string db_name){
     if(databases.count(db_name) == 0){
-        cout << "Error: database does not exist" << endl;
+        error("database does not exist");
         return false;
     }
     current_db = databases.find(db_name)->second;
@@ -35,7 +36,7 @@ void Server::list_dbs(){
 
 void Server::delete_db(string db_name){
     if(databases.count(db_name) == 0){
-        cout << "Error: cannot delete: database does not exist" << endl;
+        error("cannot delete: database does not exist");
         return;
     }
     Database* db = databases.find(db_name)->second;

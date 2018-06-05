@@ -47,6 +47,7 @@ vector<string> command_to_vector(string command){
 }
 
 void parse_server_command(string command){
+    transform(command.begin(), command.end(), command.begin(), ::tolower);
     cout << command << endl;
     vector<string> cmd = command_to_vector(command);
     if(cmd.at(0) == "create" && cmd.at(1) == "database" && cmd.size()==3){
